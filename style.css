@@ -79,3 +79,5 @@ button{cursor:pointer}
 .score-input{width:100px;padding:8px;border:1px solid var(--border);border-radius:7px}
 textarea{width:100%;min-height:90px;padding:10px;border:1px solid var(--border);border-radius:8px;font:inherit}
 @media(max-width:850px){.split{grid-template-columns:1fr}}
+
+.linkbtn{background:none;border:0;color:#1E4F91;text-decoration:underline;padding:0;font:inherit;cursor:pointer}
