@@ -71,7 +71,7 @@ document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;
 $('signin').onclick=async()=>{const r=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(r.error){$('msg').innerHTML='<div class="msg error">'+esc(r.error.message)+'</div>';return}boot()};
 $('password').onkeydown=e=>{if(e.key==='Enter')$('signin').click()};$('logout').onclick=async()=>{await sb.auth.signOut();location.reload()};boot();
 // ---------- Interview Bank: review questions drafted by the job-market refresh, approve or retire ----------
-const IVB={status:'pending'};
+const IVB={status:'pending',track:'all'};
 async function renderInterviewBank(){
   $('content').innerHTML='<div class="card muted">Loading the interview bank…</div>';
   const [q,a]=await Promise.all([sb.from('interview_questions').select('id,track,cat,diff,src,question,points,model_answer,red_flags,status,source_note,updated_at').order('id'),
@@ -79,7 +79,7 @@ async function renderInterviewBank(){
   const err=q.error||a.error;if(err){$('content').innerHTML=`<div class="msg error">${esc(err.message)}</div>`;return}
   const all=q.data||[],cnt=k=>all.filter(x=>x.status===k).length,att=a.data||[];
   const avg=att.length?Math.round(att.reduce((t,x)=>t+(+x.score||0),0)/att.length):'–',people=new Set(att.map(x=>x.user_id)).size;
-  const list=all.filter(x=>x.status===IVB.status);
+  const list=all.filter(x=>x.status===IVB.status&&(IVB.track==='all'||x.track===IVB.track));
   const card=x=>`<div class="card" style="margin-bottom:12px"><div class="muted">${esc(x.id)} · ${esc(x.track)} · ${esc(x.cat)} · difficulty ${x.diff} · ${esc(x.src||'')} · <b>${esc(x.status)}</b></div>
     <h3 style="margin:6px 0">${esc(x.question)}</h3>${x.source_note?`<div class="muted">Source: ${esc(x.source_note)}</div>`:''}
     <details><summary>Key points, model answer and red flags</summary><ol>${(x.points||[]).map(p=>`<li>${esc(p.label)} (weight ${p.weight})<br><span class="muted">Keywords: ${esc((p.keywords||[]).join(', '))}</span></li>`).join('')}</ol><p><b>Model answer:</b> ${esc(x.model_answer)}</p><p><b>Red flags:</b> ${esc(x.red_flags||'')}</p></details>
@@ -87,9 +87,11 @@ async function renderInterviewBank(){
   $('content').innerHTML=`<div class="card"><h3>Interview Practice question bank</h3>
     <p class="muted">Live questions are drawn at random for trainees. The monthly job-market refresh adds new questions here as <b>Pending</b>; nothing reaches trainees until you approve it.</p>
     <p><b>${cnt('active')}</b> live · <b>${cnt('pending')}</b> pending · <b>${cnt('retired')}</b> retired &nbsp;|&nbsp; <b>${att.length}</b> interviews completed by <b>${people}</b> trainee(s), average score <b>${avg}</b></p>
+    <div class="field"><label>Track</label><select id="ivbTrack">${[['all','All tracks'],['lead','Controls Lead (PM to Controls Lead course)'],['senior','Senior Consultant (Corvane Controls Project course)']].map(([k,l])=>`<option value="${k}" ${k===IVB.track?'selected':''}>${l} (${k==='all'?all.length:all.filter(x=>x.track===k).length})</option>`).join('')}</select></div>
     <div class="field"><label>Show</label><select id="ivbStatus">${['pending','active','retired'].map(k=>`<option value="${k}" ${k===IVB.status?'selected':''}>${k==='active'?'Live':k[0].toUpperCase()+k.slice(1)} (${cnt(k)})</option>`).join('')}</select></div></div>
     ${list.map(card).join('')||'<div class="card muted">Nothing here.</div>'}`;
   $('ivbStatus').onchange=e=>{IVB.status=e.target.value;renderInterviewBank()};
+  $('ivbTrack').onchange=e=>{IVB.track=e.target.value;renderInterviewBank()};
   document.querySelectorAll('[data-ivset]').forEach(b=>b.onclick=async()=>{b.disabled=true;
     const r=await sb.from('interview_questions').update({status:b.dataset.ivset,updated_at:new Date().toISOString()}).eq('id',b.dataset.id);
     if(r.error){alert(r.error.message);b.disabled=false;return}renderInterviewBank()});
